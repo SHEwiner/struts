@@ -19,14 +19,18 @@
 package org.apache.struts2.config;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.struts2.config.entities.BeanConfig;
+import org.apache.struts2.config.entities.BeanSelectionConfig;
 import org.apache.struts2.config.entities.ConstantConfig;
 
 public interface StrutsJavaConfiguration {
     List<BeanConfig> beans();
 
     List<ConstantConfig> constants();
+
+    default Optional<BeanSelectionConfig> beanSelection() { return Optional.empty();}
 
     List<String> unknownHandlerStack();
 }

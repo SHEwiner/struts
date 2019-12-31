@@ -22,7 +22,7 @@ import com.opensymphony.xwork2.Action;
 import com.opensymphony.xwork2.FileManager;
 import com.opensymphony.xwork2.FileManagerFactory;
 import com.opensymphony.xwork2.ObjectFactory;
-import com.opensymphony.xwork2.XWorkException;
+import com.opensymphony.xwork2.config.BeanSelectionProvider;
 import com.opensymphony.xwork2.config.Configuration;
 import com.opensymphony.xwork2.config.ConfigurationException;
 import com.opensymphony.xwork2.config.ConfigurationProvider;
@@ -52,6 +52,7 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.struts2.StrutsException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -116,6 +117,7 @@ public class XmlConfigurationProvider implements ConfigurationProvider {
         this.errorIfMissing = errorIfMissing;
 
         Map<String, String> mappings = new HashMap<>();
+        mappings.put("-//Apache Struts//XWork 2.6//EN", "xwork-2.6.dtd");
         mappings.put("-//Apache Struts//XWork 2.5//EN", "xwork-2.5.dtd");
         mappings.put("-//Apache Struts//XWork 2.3//EN", "xwork-2.3.dtd");
         mappings.put("-//Apache Struts//XWork 2.1.3//EN", "xwork-2.1.3.dtd");
@@ -219,14 +221,28 @@ public class XmlConfigurationProvider implements ConfigurationProvider {
 
                     final String nodeName = child.getNodeName();
 
-                    if ("bean".equals(nodeName)) {
+                    if ("bean-selection".equals(nodeName)) {
+                        String name = child.getAttribute("name");
+                        String impl = child.getAttribute("class");
+                        try {
+                            Class classImpl = ClassLoaderUtil.loadClass(impl, getClass());
+                            if (BeanSelectionProvider.class.isAssignableFrom(classImpl)) {
+                                BeanSelectionProvider provider = (BeanSelectionProvider) classImpl.newInstance();
+                                provider.register(containerBuilder, props);
+                            } else {
+                                throw new ConfigurationException("The bean-provider: name:" + name + " class:" + impl + " does not implement " + BeanSelectionProvider.class.getName(), childNode);
+                            }
+                        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                            throw new ConfigurationException("Unable to load bean-provider: name:" + name + " class:" + impl, e, childNode);
+                        }
+                    } else if ("bean".equals(nodeName)) {
                         String type = child.getAttribute("type");
                         String name = child.getAttribute("name");
                         String impl = child.getAttribute("class");
                         String onlyStatic = child.getAttribute("static");
                         String scopeStr = child.getAttribute("scope");
                         boolean optional = "true".equals(child.getAttribute("optional"));
-                        Scope scope = Scope.SINGLETON;
+                        Scope scope;
                         if ("prototype".equals(scopeStr)) {
                             scope = Scope.PROTOTYPE;
                         } else if ("request".equals(scopeStr)) {
@@ -237,6 +253,8 @@ public class XmlConfigurationProvider implements ConfigurationProvider {
                             scope = Scope.SINGLETON;
                         } else if ("thread".equals(scopeStr)) {
                             scope = Scope.THREAD;
+                        } else {
+                            scope = Scope.SINGLETON;
                         }
 
                         if (StringUtils.isEmpty(name)) {
@@ -1080,7 +1098,7 @@ public class XmlConfigurationProvider implements ConfigurationProvider {
 
                     docs.add(DomHelper.parse(in, dtdMappings));
                     loadedFileUrls.add(url.toString());
-                } catch (XWorkException e) {
+                } catch (StrutsException e) {
                     if (includeElement != null) {
                         throw new ConfigurationException("Unable to load " + url, e, includeElement);
                     } else {

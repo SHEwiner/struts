@@ -102,9 +102,6 @@ public final class StrutsConstants {
     
     /** Maximum strong sizing for MruCacheStorage for freemarker */
     public static final String STRUTS_FREEMARKER_MRU_MAX_STRONG_SIZE = "struts.freemarker.mru.max.strong.size";
-    
-    /** org.apache.struts2.views.velocity.VelocityManager implementation class */
-    public static final String STRUTS_VELOCITY_MANAGER_CLASSNAME = "struts.velocity.manager.classname";
 
     /** The Velocity configuration file path */
     public static final String STRUTS_VELOCITY_CONFIGFILE = "struts.velocity.configfile";
@@ -263,6 +260,9 @@ public final class StrutsConstants {
 
     /** Enables evaluation of OGNL expressions */
     public static final String STRUTS_ENABLE_OGNL_EVAL_EXPRESSION = "struts.ognl.enableOGNLEvalExpression";
+
+    /** The maximum length of an expression (OGNL) */
+    public static final String STRUTS_OGNL_EXPRESSION_MAX_LENGTH = "struts.ognl.expressionMaxLength";
 
     /** Disables {@link org.apache.struts2.dispatcher.StrutsRequestWrapper} request attribute value stack lookup (JSTL accessibility) */
     public static final String STRUTS_DISABLE_REQUEST_ATTRIBUTE_VALUE_STACK_LOOKUP = "struts.disableRequestAttributeValueStackLookup";

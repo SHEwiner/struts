@@ -34,6 +34,7 @@ import ognl.MethodFailedException;
 import ognl.NoSuchPropertyException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.struts2.StrutsException;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -64,7 +65,7 @@ public class DefaultActionInvocation implements ActionInvocation {
     protected Result explicitResult;
     protected String resultCode;
     protected boolean executed = false;
-    protected boolean pushAction = true;
+    protected boolean pushAction;
     protected ObjectFactory objectFactory;
     protected ActionEventListener actionEventListener;
     protected ValueStackFactory valueStackFactory;
@@ -224,7 +225,7 @@ public class DefaultActionInvocation implements ActionInvocation {
                 return objectFactory.buildResult(resultConfig, invocationContext.getContextMap());
             } catch (Exception e) {
                 LOG.error("There was an exception while instantiating the result of type {}", resultConfig.getClassName(), e);
-                throw new XWorkException(e, resultConfig);
+                throw new StrutsException(e, resultConfig);
             }
         } else if (resultCode != null && !Action.NONE.equals(resultCode) && unknownHandlerManager.hasUnknownHandlers()) {
             return unknownHandlerManager.handleUnknownResult(invocationContext, proxy.getActionName(), proxy.getConfig(), resultCode);
@@ -243,7 +244,6 @@ public class DefaultActionInvocation implements ActionInvocation {
         if (asyncManager == null || !asyncManager.hasAsyncActionResult()) {
             if (interceptors.hasNext()) {
                 final InterceptorMapping interceptorMapping = interceptors.next();
-                String interceptorMsg = "interceptorMapping: " + interceptorMapping.getName();
                 Interceptor interceptor = interceptorMapping.getInterceptor();
                 if (interceptor instanceof WithLazyParams) {
                     interceptor = lazyParamInjector.injectParams(interceptor, interceptorMapping.getParams(), invocationContext);
@@ -298,9 +298,9 @@ public class DefaultActionInvocation implements ActionInvocation {
         try {
             action = objectFactory.buildAction(proxy.getActionName(), proxy.getNamespace(), proxy.getConfig(), contextMap);
         } catch (InstantiationException e) {
-            throw new XWorkException("Unable to instantiate Action!", e, proxy.getConfig());
+            throw new StrutsException("Unable to instantiate Action!", e, proxy.getConfig());
         } catch (IllegalAccessException e) {
-            throw new XWorkException("Illegal access to constructor, is it public?", e, proxy.getConfig());
+            throw new StrutsException("Illegal access to constructor, is it public?", e, proxy.getConfig());
         } catch (Exception e) {
             String gripe;
 
@@ -315,7 +315,7 @@ public class DefaultActionInvocation implements ActionInvocation {
             }
 
             gripe += (((" -- " + e.getMessage()) != null) ? e.getMessage() : " [no message in exception]");
-            throw new XWorkException(gripe, e, proxy.getConfig());
+            throw new StrutsException(gripe, e, proxy.getConfig());
         }
 
         if (actionEventListener != null) {
@@ -419,7 +419,6 @@ public class DefaultActionInvocation implements ActionInvocation {
 
         LOG.debug("Executing action method = {}", methodName);
 
-        String timerKey = "invokeAction: " + proxy.getActionName();
         try {
             Object methodResult;
             try {
